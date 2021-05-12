@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 
 img1_origin = cv2.imread('frame1.jpg')
 img2_origin = cv2.imread('frame2.jpg')
@@ -7,39 +8,63 @@ img2_origin = cv2.imread('frame2.jpg')
 img1 = cv2.resize(img1_origin, dsize=(1280, 720), interpolation=cv2.INTER_AREA)
 img2 = cv2.resize(img2_origin, dsize=(1280, 720), interpolation=cv2.INTER_AREA)
 
-height, width, _ = img1.shape
+height, width, _ = img1.shape #720 1280
 
 # 그레이스케일로 변환
 gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
-# 코너점 찾는 함수, 그레이스케일 영상만 입력 가능
-#pt1 = cv2.goodFeaturesToTrack(gray1, 50, 0.01, 10)
+#lukas-kanade 알고리즘 적용
+def lukasKanade(y, x):
 
-# 찾은 코너점 정보를 옵티컬플로우 함수에 입력
-# src1, src2에서 움직임 정보를 찾아내고 pt1에 입력한 좌표가 어디로 이동했는지 파악
-#pt2, status, err = cv2.calcOpticalFlowPyrLK(img1, img2, pt1, None)
+    A = np.zeros((9, 2), np.uint8)
+    b = np.zeros((9, 1), np.uint8)
 
-# 가중합으로 개체가 어느 정도 이동했는지 보기 위함
-#dst = cv2.addWeighted(img1, 0.5, img2, 0.5, 0)
+    # 자신과 주위8개 픽셀에 대해 모두 수행
+    list_tmp = [-1, 0, 1]
+    num = 0
+    for m in list_tmp:
+        for n in list_tmp:
+            tmpy = y + m
+            tmpx = x + n
 
-def lukasKanade(img):
+            ay = int(gray1[tmpy, tmpx+1]) - int(gray1[tmpy, tmpx])
+            A[num][0] = ay
+            ax = int(gray1[tmpy+1, tmpx]) - int(gray1[tmpy, tmpx])
+            A[num][1] = ax
+            at = int(gray2[tmpy, tmpx]) - int(gray1[tmpy, tmpx])
+            b[num][0] = at
+
+            num = num+1
 
 
+    # Normal Equation 해결
+    tmp = np.dot(A.T, A)
 
+    # 역행렬이 존재하지 않는 경우
+    if np.linalg.det(tmp) == 0:
+        return x, y
+
+    inverse_arr = np.linalg.inv(tmp)
+    vt = np.dot(np.dot(inverse_arr, A.T), b)
+
+    print(vt)
+
+    v = int(vt[0])
+    u = int(vt[1])
+
+    return v, u
 
 # pt1과 pt2를 화면에 표시
-for x in range(width):
-    if x % 10 != 0:
+for y in range(10,height,10):
+    for x in range(10,width,10):
+        v, u = lukasKanade(y, x)
+        cv2.circle(gray1, (x, y), 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.arrowedLine(gray1, (x, y), (x + u, y + v), (255, 255, 255), 1)
+    else:
         continue
-    for y in range(height):
-        # pt1과 pt2를 이어주는 선 그리기
-        if y % 10 == 0:
-            cv2.circle(img1, (x, y), 1, (255, 255, 255), 1, cv2.LINE_AA)
-            cv2.arrowedLine(img1, (x,y), (x+5, y+5), (255, 255, 255), 1)
-        else:
-            continue
 
-cv2.imshow('result', img1)
+cv2.imshow('result', gray1)
 cv2.waitKey()
 cv2.destroyAllWindows()
 
