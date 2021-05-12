@@ -9,14 +9,13 @@ img1 = cv2.resize(img1_origin, dsize=(1280, 720), interpolation=cv2.INTER_AREA)
 img2 = cv2.resize(img2_origin, dsize=(1280, 720), interpolation=cv2.INTER_AREA)
 
 height, width, _ = img1.shape #720 1280
-
+print(img1.shape)
 # 그레이스케일로 변환
 gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
 
 #lukas-kanade 알고리즘 적용
-def lukasKanade(y, x):
-
+def lukasKanade(x, y): # 1280, 720
     A = np.zeros((9, 2), np.uint8)
     b = np.zeros((9, 1), np.uint8)
 
@@ -28,43 +27,43 @@ def lukasKanade(y, x):
             tmpy = y + m
             tmpx = x + n
 
-            ay = int(gray1[tmpy, tmpx+1]) - int(gray1[tmpy, tmpx])
+            ay = int(gray1[tmpy + 1, tmpx]) - int(gray1[tmpy, tmpx])
             A[num][0] = ay
-            ax = int(gray1[tmpy+1, tmpx]) - int(gray1[tmpy, tmpx])
+            ax = int(gray1[tmpy, tmpx+1]) - int(gray1[tmpy, tmpx])
             A[num][1] = ax
             at = int(gray2[tmpy, tmpx]) - int(gray1[tmpy, tmpx])
             b[num][0] = at
 
             num = num+1
 
-
     # Normal Equation 해결
     tmp = np.dot(A.T, A)
 
-    # 역행렬이 존재하지 않는 경우
+    # 역행렬이 존재하지 않는 경우 예외. 자기 자신을 반환
     if np.linalg.det(tmp) == 0:
         return x, y
-
+    
+    # 역행렬 계산 후 vt계산
     inverse_arr = np.linalg.inv(tmp)
     vt = np.dot(np.dot(inverse_arr, A.T), b)
 
-    print(vt)
+    v = int(vt[0]/10000000)
+    u = int(vt[1]/10000000)
 
-    v = int(vt[0])
-    u = int(vt[1])
 
     return v, u
 
 # pt1과 pt2를 화면에 표시
-for y in range(10,height,10):
-    for x in range(10,width,10):
-        v, u = lukasKanade(y, x)
-        cv2.circle(gray1, (x, y), 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.arrowedLine(gray1, (x, y), (x + u, y + v), (255, 255, 255), 1)
+for x in range(10,width,10):  # 1280
+    for y in range(10,height,10):  # 720
+
+        v, u = lukasKanade(x, y)
+        #cv2.circle(img1, (x, y), 1, (255, 255, 255), 1, cv2.LINE_AA)
+        cv2.arrowedLine(img1, (x, y), (x + u, y + v), (255, 0, 0), 1)
     else:
         continue
 
-cv2.imshow('result', gray1)
+cv2.imshow('result', img1)
 cv2.waitKey()
 cv2.destroyAllWindows()
 
