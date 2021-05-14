@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import math
+import pandas as pd
 
 img1_origin = cv2.imread('frame1.jpg')
 img2_origin = cv2.imread('frame2.jpg')
@@ -9,7 +9,6 @@ img1 = cv2.resize(img1_origin, dsize=(1280, 720), interpolation=cv2.INTER_AREA)
 img2 = cv2.resize(img2_origin, dsize=(1280, 720), interpolation=cv2.INTER_AREA)
 
 height, width, _ = img1.shape #720 1280
-print(img1.shape)
 # 그레이스케일로 변환
 gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
 gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
@@ -46,20 +45,20 @@ def lukasKanade(x, y): # 1280, 720
     # 역행렬 계산 후 vt계산
     inverse_arr = np.linalg.inv(tmp)
     vt = np.dot(np.dot(inverse_arr, A.T), b)
+    vt_n = vt / np.linalg.norm(vt) * 10
 
-    v = int(vt[0]/10000000)
-    u = int(vt[1]/10000000)
+    np.nan_to_num(vt_n, copy=False)
 
+    print(vt_n)
 
-    return v, u
+    return vt_n
 
 # pt1과 pt2를 화면에 표시
-for x in range(10,width,10):  # 1280
-    for y in range(10,height,10):  # 720
+for x in range(10, width, 10):  # 1280
+    for y in range(10, height, 10):  # 720
 
-        v, u = lukasKanade(x, y)
-        #cv2.circle(img1, (x, y), 1, (255, 255, 255), 1, cv2.LINE_AA)
-        cv2.arrowedLine(img1, (x, y), (x + u, y + v), (255, 0, 0), 1)
+        vt = lukasKanade(x, y)
+        cv2.arrowedLine(img1, (x, y), (int(x + vt[0]), int(y + vt[1])), (255, 0, 0), 1)
     else:
         continue
 
