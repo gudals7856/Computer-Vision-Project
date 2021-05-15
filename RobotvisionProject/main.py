@@ -31,7 +31,7 @@ def lukasKanade(x, y): # 1280, 720
             ax = int(gray1[tmpy, tmpx+1]) - int(gray1[tmpy, tmpx])
             A[num][1] = ax
             at = int(gray2[tmpy, tmpx]) - int(gray1[tmpy, tmpx])
-            b[num][0] = at
+            b[num][0] = -at
 
             num = num+1
 
