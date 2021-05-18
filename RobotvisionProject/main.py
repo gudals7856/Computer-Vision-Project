@@ -39,18 +39,19 @@ def lukasKanade(x, y):  # 1280, 720
 
             num = num + 1
 
-    # Normal Equation 해결
+    # Normal Equation 계산 과정
     tmp = np.dot(A.T, A)
 
-    # 역행렬이 존재하지 않는 경우 예외. 자기 자신을 반환
+    # 역행렬이 존재하지 않는 경우 예외.
     if np.linalg.det(tmp) == 0:
         # cv2.arrowedLine(img1, (x, y), (int(x), int(y)), (255, 0, 0), 1)
         return
 
-    # 역행렬 계산 후 vt계산
+    # 역행렬 계산 후 vt를 계산한다.
     inverse_arr = np.linalg.inv(tmp)
     vt = np.dot(np.dot(inverse_arr, A.T), b)
 
+    # 0으로 나누어지는 경우는 계산하지 않는다.
     if np.linalg.norm(vt) == 0:
         # cv2.arrowedLine(img1, (x, y), (int(x), int(y)), (255, 0, 0), 1)
         return
