@@ -8,9 +8,10 @@ height, width, _ = img1_origin.shape #720 1280
 B, G, R = cv2.split(img1_origin)
 rgb_data = np.zeros((256, 256, 256), np.uint8)
 location_data = np.zeros((720, 1280), np.uint8)
+kernel =
 
-for x in (0, 1280):
-    for y in (0, 720):
+for x in (0, 1279):
+    for y in (0, 719):
         r = R[y, x]
         g = G[y, x]
         b = B[y, x]

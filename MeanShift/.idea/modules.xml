@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/MeanShift.iml" filepath="$PROJECT_DIR$/.idea/MeanShift.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../RobotvisionProject/.idea/RobotvisionProject.iml" filepath="$PROJECT_DIR$/../RobotvisionProject/.idea/RobotvisionProject.iml" />
     </modules>
   </component>
 </project>

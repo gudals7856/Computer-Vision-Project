@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 
 img1 = cv2.imread('frame1.jpg')
 img2 = cv2.imread('frame2.jpg')
