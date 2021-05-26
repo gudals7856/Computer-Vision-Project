@@ -3,13 +3,13 @@ import numpy as np
 
 img_origin = cv2.imread('frame1.jpg')
 img = cv2.resize(img_origin, dsize=(510, 250), interpolation=cv2.INTER_AREA)
-
 height, width, _ = img.shape  # 360(y) 640(x)
 B, G, R = cv2.split(img)
 
-X = np.zeros((510, 250, 5))  # y, x, rgb
+X = np.zeros((250, 510, 5))  # 모든 좌표의 y, x, r, g, b를 저장해놓은 배열
+V = np.zeros((width * height, 5))   # 모든 픽셀에 대해 v를 구하고 이를 이용해 클러스터링 진행
+yt_variation_min = 3
 
-yt_variation_min = 0.1
 
 # 이미지 크기 밖으로 index가 벗어나는지 확인
 def isOutOfIndex(x, y):
@@ -28,59 +28,57 @@ def gaussian_kernel(xi, yt, h):
     return np.exp(-((distance(xi, yt) / h) ** 2))
 
 
-# y_t+1을 구하기 위한 함수. 원형 커널 내의 mean을 구함.
-def circle_kernel_mean(yt):
+# yt_next을 구하기 위한 함수. 원형 커널 내의 mean을 구함.
+def mean_shift(yt):
     hr = 10
     hs = 4
+    num = 0
+    numerator = 0
+    denominator = 0
+    yt_next = yt
 
     yt_loc = np.array([yt[0], yt[1]])
-    yt_rgb = np.array([yt[3], yt[4], yt[5]])
-    list_satisfied = np.zeros((510, 250, 5))
-
-    for x in range(0, width):
-        for y in range(0, height):
-            # 모든 픽셀을 돌면서 hr, hs를 만족하는 것들을 찾아라.
-
-    num = 0
-    for x in range(yt_loc[0] - hs, yt_loc[0] + hs):
-        for y in range(yt_loc[1] - hs, yt_loc[1] + hs):
-            if isOutOfIndex(x, y):
-                tmp_array = np.array(x, y)
-                if distance(tmp_array, yt_loc) < hs:
-                    list_loc[num][0] = x
-                    list_loc[num][1] = y
-                    num = num + 1
-
-    num = 0
-    for x in range(yt_rgb[0] - hr, yt_rgb[0] + hr):
-        for y in range(yt_rgb[1] - hr, yt_rgb[1] + hr):
-            for z in range(yt_rgb[2] - hr, yt_rgb[2] + hr):
-                if isOutOfIndex(x, y):
-                    tmp_array = np.array(x, y, z)
-                    if distance(tmp_array, yt_rgb) < hr:
-                        list_rgb[num][0] = x
-                        list_rgb[num][1] = y
-                        list_rgb[num][2] = z
-                        num = num + 1
-
-
-    xi_loc = np.array(xi[0], xi[1])
-    xi_rbh = np.array(xi[3], xi[4], yt[5])
-
-    k_loc = gaussian_kernel(xi_loc, yt_loc, hs)
-    k_rgb = gaussian_kernel(xi_rgb, yt_rgb, hr)
-
-
-# 데이터 분포를 바탕으로 Mean Shift 진행
-def meanShift(x, y):
-    yt = np.array([x, y, R[y, x], G[y, x], B[y, x]])
+    yt_rgb = np.array([yt[2], yt[3], yt[4]])
+    list_satisfied = np.zeros((width * height, 5))
 
     while True:
-        yt_next = circle_kernel_mean(yt)
-        if distance(yt_next, yt) < yt_variation_min:
+
+        # 모든 픽셀을 돌면서 hr, hs를 만족하는 것들을 찾아라.
+        for x in range(0, width):
+            for y in range(0, height):
+
+                # spatial(xi_loc)과 rgb(xi_rgb) 관련된 두 부분으로 나누어 확인
+                xi_loc = np.array([X[y][x][0], X[y][x][1]])
+                xi_rgb = np.array([X[y][x][2], X[y][x][3], X[y][x][4]])
+                
+                # 두 부분 다 지정한 h 커널 내에 존재할 경우 list에 추가
+                if distance(yt_loc, xi_loc) < hs and distance(yt_rgb, xi_rgb) < hr:
+                    list_satisfied[num] = X[y][x]
+                    num = num + 1
+                else:
+                    continue
+
+        # list에 있는 xi를 전부 확인하며 mean을 구함
+        for n in range(0, num):
+            list_satisfied_loc = np.array([list_satisfied[num][0], list_satisfied[num][1]])
+            list_satisfied_rgb = np.array([list_satisfied[num][2], list_satisfied[num][3], list_satisfied[num][4]])
+            k_loc = gaussian_kernel(list_satisfied_loc, yt_loc, hs)
+            k_rgb = gaussian_kernel(list_satisfied_rgb, yt_rgb, hr)
+            k = k_loc * k_rgb
+
+
+            # yt_next 구하기 위한 시그마 계산
+            numerator = numerator + list_satisfied[num] * k     # 분자 (numerator)
+            denominator = denominator + k                       # 분모 (denominator)
+
+        yt = yt_next
+        yt_next = numerator / denominator
+        print(numerator, denominator)
+
+        if distance(yt, yt_next) < yt_variation_min:
+            print(yt_next)
             break
 
-    return
 
 for x in range(0, width):
     for y in range(0, height):
@@ -90,9 +88,11 @@ for x in range(0, width):
         X[y][x][3] = G[y][x]
         X[y][x][4] = B[y][x]
 
-for x in (0, width - 1):
-    for y in (0, height - 1):
-        meanShift(x, y)
+# 모든 픽셀에 대해 mean shift 진행
+for x in range(0, width):
+    for y in range(0, height):
+        yt = X[y][x]
+        mean_shift(yt)
 
 cv2.imshow('result', img)
 cv2.waitKey()
