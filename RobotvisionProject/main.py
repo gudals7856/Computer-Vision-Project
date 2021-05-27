@@ -48,15 +48,15 @@ def lukasKanade(x, y):  # 1280, 720
     inverse_arr = np.linalg.inv(tmp)
     vt = np.dot(np.dot(inverse_arr, A.T), b)
 
-    # 0으로 나누어지는 경우는 계산하지 않는다.
-    if np.linalg.norm(vt) == 0:
+    # 0으로 나누어지는 경우는 계산하지 않고, 길이가 짧은 vt는 나타내지 않도록 한다.
+    if np.linalg.norm(vt) < 1000:
         return
 
-    vt_n = vt / np.linalg.norm(vt) * 7
+    vt_n = vt / np.linalg.norm(vt) * 9
 
     np.nan_to_num(vt_n, copy=False)
 
-    cv2.arrowedLine(img1, (x, y), (int(x + vt_n[1]), int(y + vt_n[0])), (0, 0, 255), 1)
+    cv2.arrowedLine(img1, (x, y), (int(x + vt_n[1]), int(y + vt_n[0])), (0, 0, 255), 2)
     return
 
 for x in range(0, width, 10):  # 1280
